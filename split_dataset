@@ -1,0 +1,44 @@
+import os, glob, shutil
+from sklearn.model_selection import train_test_split
+
+classes = ["spoon", "fork", "knife"]
+train_ratio = 0.80
+val_ratio   = 0.10
+test_ratio  = 0.10
+
+input_base  = "processed_images"
+output_base = "dataset"
+
+for cls in classes:
+    src_dir = os.path.join(input_base, cls)
+    # .jpg, .jpeg ve .png dosyalarını al
+    patterns = ["*.jpg", "*.jpeg", "*.png"]
+    imgs = []
+    for ext in patterns:
+        imgs += glob.glob(os.path.join(src_dir, ext))
+    if not imgs:
+        print(f"UYARI: {src_dir} içinde hiç resim yok!")
+        continue
+
+    # Train / (Val+Test)
+    train_imgs, temp_imgs = train_test_split(
+        imgs, train_size=train_ratio, random_state=42, shuffle=True
+    )
+    # Val / Test
+    val_size = val_ratio / (val_ratio + test_ratio)
+    val_imgs, test_imgs = train_test_split(
+        temp_imgs, train_size=val_size, random_state=42, shuffle=True
+    )
+
+    def copy(split_name, img_list):
+        dest = os.path.join(output_base, split_name, cls)
+        os.makedirs(dest, exist_ok=True)
+        for p in img_list:
+            shutil.copy(p, dest)
+
+    copy("train", train_imgs)
+    copy("val",   val_imgs)
+    copy("test",  test_imgs)
+    print(f"{cls}: train={len(train_imgs)}, val={len(val_imgs)}, test={len(test_imgs)}")
+
+print("\nDataset klasör yapısı oluşturuldu: dataset/ altında train/ val/ test/ klasörleri.")
